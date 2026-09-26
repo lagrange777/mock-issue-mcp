@@ -1,0 +1,16 @@
+name: mock-issue-mcp
+services:
+  mock-issue-mcp:
+    build: .
+    image: mock-issue-mcp:local
+    ports:
+      - "127.0.0.1:${MOCK_PORT:-8090}:8090"
+    environment:
+      LISTEN_ADDR: 0.0.0.0:8090
+      DATA_PATH: /app/data/seed.json
+    volumes:
+      - ./data:/app/data:ro
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped

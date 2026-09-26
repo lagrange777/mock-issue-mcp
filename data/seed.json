@@ -1,0 +1,201 @@
+{
+  "projects": [
+    {
+      "id": "DEMO",
+      "name": "Оплата магазина"
+    },
+    {
+      "id": "OPS",
+      "name": "Инфраструктура"
+    },
+    {
+      "id": "EMPTY",
+      "name": "Пустой проект"
+    }
+  ],
+  "users": [
+    {
+      "id": "user-1",
+      "name": "Алексей — администратор"
+    },
+    {
+      "id": "user-2",
+      "name": "Мария — backend"
+    },
+    {
+      "id": "user-3",
+      "name": "Иван — QA"
+    },
+    {
+      "id": "user-4",
+      "name": "Анна — frontend"
+    }
+  ],
+  "issues": [
+    {
+      "key": "DEMO-100",
+      "title": "Получить тестовый ключ оплаты",
+      "description": "Запросить доступ к sandbox платёжного провайдера.",
+      "status": "in_progress",
+      "priority": "critical",
+      "assigneeId": "user-1",
+      "dueDate": "2026-09-28",
+      "blockedBy": [],
+      "project": "DEMO"
+    },
+    {
+      "key": "DEMO-101",
+      "title": "Подключить оплату",
+      "description": "Интегрировать тестовый платёжный шлюз. Нужен ключ из DEMO-100.",
+      "status": "blocked",
+      "priority": "high",
+      "assigneeId": "user-2",
+      "dueDate": "2026-10-01",
+      "blockedBy": [
+        "DEMO-100"
+      ],
+      "project": "DEMO"
+    },
+    {
+      "key": "DEMO-102",
+      "title": "Проверить оплату",
+      "description": "Проверить успешный платёж, отказ и повторный callback.",
+      "status": "blocked",
+      "priority": "high",
+      "assigneeId": "user-3",
+      "dueDate": "2026-10-03",
+      "blockedBy": [
+        "DEMO-101"
+      ],
+      "project": "DEMO"
+    },
+    {
+      "key": "DEMO-103",
+      "title": "Подготовить корзину",
+      "description": "Экран корзины и пересчёт суммы уже готовы.",
+      "status": "done",
+      "priority": "medium",
+      "assigneeId": "user-2",
+      "dueDate": "2026-09-20",
+      "blockedBy": [],
+      "project": "DEMO"
+    },
+    {
+      "key": "DEMO-104",
+      "title": "Исправить мобильную вёрстку",
+      "description": "Кнопка оплаты перекрывается клавиатурой на узких экранах.",
+      "status": "in_progress",
+      "priority": "high",
+      "assigneeId": "user-4",
+      "dueDate": "2026-09-24",
+      "blockedBy": [],
+      "project": "DEMO"
+    },
+    {
+      "key": "DEMO-105",
+      "title": "Обновить документацию",
+      "description": "Описать API оплаты после реализации.",
+      "status": "todo",
+      "priority": "low",
+      "assigneeId": "user-4",
+      "dueDate": "2026-10-05",
+      "blockedBy": [
+        "DEMO-101"
+      ],
+      "project": "DEMO"
+    },
+    {
+      "key": "DEMO-106",
+      "title": "Выпустить оплату",
+      "description": "Выпуск разрешён после успешной проверки и готовности мониторинга.",
+      "status": "blocked",
+      "priority": "critical",
+      "assigneeId": "user-1",
+      "dueDate": "2026-10-07",
+      "blockedBy": [
+        "DEMO-102",
+        "OPS-201"
+      ],
+      "project": "DEMO"
+    },
+    {
+      "key": "OPS-200",
+      "title": "Выдать доступ к логам",
+      "description": "Участники команды получили доступ к тестовым логам.",
+      "status": "done",
+      "priority": "medium",
+      "assigneeId": "user-1",
+      "dueDate": "2026-09-22",
+      "blockedBy": [],
+      "project": "OPS"
+    },
+    {
+      "key": "OPS-201",
+      "title": "Настроить мониторинг оплаты",
+      "description": "Добавить алерт по доле неуспешных платежей.",
+      "status": "todo",
+      "priority": "high",
+      "assigneeId": "user-1",
+      "dueDate": "2026-10-04",
+      "blockedBy": [
+        "DEMO-101"
+      ],
+      "project": "OPS"
+    },
+    {
+      "key": "OPS-202",
+      "title": "Проверить резервные копии",
+      "description": "Провести восстановление тестовой базы из резервной копии.",
+      "status": "todo",
+      "priority": "medium",
+      "assigneeId": "user-3",
+      "dueDate": "2026-09-25",
+      "blockedBy": [],
+      "project": "OPS"
+    }
+  ],
+  "comments": [
+    {
+      "id": "c-1",
+      "issueKey": "DEMO-100",
+      "authorId": "user-1",
+      "text": "Заявка на тестовый ключ отправлена провайдеру. Ожидаем ответ.",
+      "createdAt": "2026-09-25T09:00:00Z"
+    },
+    {
+      "id": "c-2",
+      "issueKey": "DEMO-100",
+      "authorId": "user-1",
+      "text": "Если ключ не придёт до 28 сентября, напишу в поддержку. Ответственный за доступ — Алексей.",
+      "createdAt": "2026-09-26T08:00:00Z"
+    },
+    {
+      "id": "c-3",
+      "issueKey": "DEMO-101",
+      "authorId": "user-2",
+      "text": "Подготовил каркас интеграции. Для продолжения нужен тестовый ключ из DEMO-100.",
+      "createdAt": "2026-09-26T09:00:00Z"
+    },
+    {
+      "id": "c-4",
+      "issueKey": "DEMO-102",
+      "authorId": "user-3",
+      "text": "Тест-кейсы готовы; запускать их можно после реализации DEMO-101.",
+      "createdAt": "2026-09-26T10:00:00Z"
+    },
+    {
+      "id": "c-5",
+      "issueKey": "DEMO-104",
+      "authorId": "user-4",
+      "text": "Воспроизводится на экране шириной 375px. Исправление в работе.",
+      "createdAt": "2026-09-24T12:00:00Z"
+    },
+    {
+      "id": "c-6",
+      "issueKey": "DEMO-106",
+      "authorId": "user-1",
+      "text": "Для выпуска нужны успешная проверка оплаты и алерт мониторинга.",
+      "createdAt": "2026-09-26T11:00:00Z"
+    }
+  ]
+}
