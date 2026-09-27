@@ -35,6 +35,7 @@ func run() error {
 		return errors.New("LISTEN_ADDR must include a nonzero port")
 	}
 	dataPath := env("DATA_PATH", "data/seed.json")
+	reportsPath := env("REPORTS_PATH", "reports")
 	if _, err := tracker.Load(dataPath); err != nil {
 		return fmt.Errorf("load dataset: %w", err)
 	}
@@ -44,7 +45,7 @@ func run() error {
 		return errors.New("invalid TRACKER_API_URL")
 	}
 	mux := http.NewServeMux()
-	mux.Handle("/mcp", mcpserver.Handler(mcpserver.New(apiURL)))
+	mux.Handle("/mcp", mcpserver.Handler(mcpserver.New(apiURL, reportsPath)))
 	mux.Handle("/", tracker.NewHandler(dataPath))
 	server := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

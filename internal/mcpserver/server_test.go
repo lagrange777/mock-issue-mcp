@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -19,7 +21,8 @@ func TestToolsOverHTTP(t *testing.T) {
 	apiHandler := tracker.NewHandler("../../data/seed.json")
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { apiCalls.Add(1); apiHandler.ServeHTTP(w, r) }))
 	defer api.Close()
-	remote := httptest.NewServer(Handler(New(api.URL)))
+	reportsDir := t.TempDir()
+	remote := httptest.NewServer(Handler(New(api.URL, reportsDir)))
 	defer remote.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -32,12 +35,19 @@ func TestToolsOverHTTP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(list.Tools) != 3 {
+	if len(list.Tools) != 5 {
 		t.Fatalf("tools: %d", len(list.Tools))
 	}
 	for _, tool := range list.Tools {
-		if tool.Description == "" || tool.InputSchema == nil || tool.OutputSchema == nil || tool.Annotations == nil || !tool.Annotations.ReadOnlyHint {
+		if tool.Description == "" || tool.InputSchema == nil || tool.OutputSchema == nil || tool.Annotations == nil {
 			t.Fatalf("incomplete tool: %+v", tool)
+		}
+		if tool.Name == "save_issue_report" {
+			if tool.Annotations.ReadOnlyHint || tool.Annotations.DestructiveHint == nil || *tool.Annotations.DestructiveHint || tool.Annotations.OpenWorldHint == nil || *tool.Annotations.OpenWorldHint {
+				t.Fatalf("unsafe save annotations: %+v", tool.Annotations)
+			}
+		} else if !tool.Annotations.ReadOnlyHint {
+			t.Fatalf("unexpected mutating tool: %+v", tool)
 		}
 	}
 	call := func(name string, args map[string]any, wantError bool) string {
@@ -72,10 +82,30 @@ func TestToolsOverHTTP(t *testing.T) {
 	if page.Total != 7 || len(page.Items) != 1 || !page.HasMore {
 		t.Fatalf("%+v", page)
 	}
+	searchItems := append([]tracker.Issue(nil), page.Items...)
 	call("search_issues", map[string]any{"project": "EMPTY"}, false)
 	if apiCalls.Load() != 5 {
 		t.Fatalf("tools must call real HTTP API: %d", apiCalls.Load())
 	}
+
+	// Pass structured search data through both following tools exactly as an
+	// MCP client/LLM pipeline does.
+	summaryJSON := call("summarize_issues", map[string]any{"issues": searchItems, "title": "Задачи DEMO"}, false)
+	var report IssueReport
+	if err := json.Unmarshal([]byte(summaryJSON), &report); err != nil || report.Count != len(searchItems) || report.Markdown == "" {
+		t.Fatalf("summary: %s %v", summaryJSON, err)
+	}
+	savedJSON := call("save_issue_report", map[string]any{"filename": "blocked-demo.md", "content": report.Markdown}, false)
+	var saved SavedReport
+	if err := json.Unmarshal([]byte(savedJSON), &saved); err != nil || saved.Bytes != len(report.Markdown) || saved.SHA256 == "" {
+		t.Fatalf("save: %s %v", savedJSON, err)
+	}
+	content, err := os.ReadFile(filepath.Join(reportsDir, "blocked-demo.md"))
+	if err != nil || string(content) != report.Markdown {
+		t.Fatalf("saved transfer mismatch: %v", err)
+	}
+	call("save_issue_report", map[string]any{"filename": "blocked-demo.md", "content": report.Markdown}, false)
+	call("save_issue_report", map[string]any{"filename": "../escape.md", "content": report.Markdown}, true)
 	call("get_issue", map[string]any{"key": "DEMO-999"}, true)
 	before := apiCalls.Load()
 	for _, args := range []map[string]any{{}, {"key": "../bad"}, {"key": "DEMO-101", "extra": true}} {
