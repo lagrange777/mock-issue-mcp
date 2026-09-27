@@ -12,8 +12,9 @@ RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY --from=build /out/mock-issue-mcp /app/mock-issue-mcp
 COPY data /app/data
+RUN mkdir -p /app/reports && chown 65532:65532 /app/reports
 USER 65532:65532
-ENV LISTEN_ADDR=0.0.0.0:8090 DATA_PATH=/app/data/seed.json
+ENV LISTEN_ADDR=0.0.0.0:8090 DATA_PATH=/app/data/seed.json REPORTS_PATH=/app/reports
 EXPOSE 8090
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:8090/healthz || exit 1
 ENTRYPOINT ["/app/mock-issue-mcp"]

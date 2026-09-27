@@ -46,9 +46,13 @@ func (c Client) get(ctx context.Context, path string, dest any) error {
 	return nil
 }
 
-func New(apiURL string) *mcp.Server {
+func New(apiURL string, reportDirs ...string) *mcp.Server {
+	reportsDir := "reports"
+	if len(reportDirs) > 0 && strings.TrimSpace(reportDirs[0]) != "" {
+		reportsDir = reportDirs[0]
+	}
 	client := Client{BaseURL: strings.TrimRight(apiURL, "/"), HTTP: &http.Client{Timeout: 5 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}
-	server := mcp.NewServer(&mcp.Implementation{Name: "mock-issue-mcp", Version: "1.0.0"}, nil)
+	server := mcp.NewServer(&mcp.Implementation{Name: "mock-issue-mcp", Version: "1.1.0"}, nil)
 	keySchema := map[string]any{"type": "object", "properties": map[string]any{"key": map[string]any{"type": "string", "pattern": tracker.KeyPattern.String(), "description": "Ключ задачи, например DEMO-101"}}, "required": []string{"key"}, "additionalProperties": false}
 	mcp.AddTool(server, &mcp.Tool{Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, IdempotentHint: true}, Name: "get_issue", Description: "Получить задачу по ключу: описание, статус, приоритет, исполнителя, срок и ключи блокирующих задач. Чтобы выяснить причину блокировки, прочитайте задачи из blockedBy и их комментарии.", InputSchema: keySchema}, func(ctx context.Context, _ *mcp.CallToolRequest, in KeyInput) (*mcp.CallToolResult, tracker.Issue, error) {
 		var out tracker.Issue
@@ -81,6 +85,14 @@ func New(apiURL string) *mcp.Server {
 	mcp.AddTool(server, &mcp.Tool{Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, IdempotentHint: true}, Name: "get_issue_comments", Description: "Прочитать комментарии задачи от старых к новым. Используйте для уточнения причин блокировки, договорённостей и следующего действия. Возвращает авторов и даты.", InputSchema: keySchema}, func(ctx context.Context, _ *mcp.CallToolRequest, in KeyInput) (*mcp.CallToolResult, tracker.Comments, error) {
 		var out tracker.Comments
 		err := client.get(ctx, "/api/issues/"+url.PathEscape(in.Key)+"/comments", &out)
+		return nil, out, err
+	})
+	mcp.AddTool(server, &mcp.Tool{Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, IdempotentHint: true}, Name: "summarize_issues", Description: "Преобразовать результат search_issues в детерминированный Markdown-отчёт. Передайте поле items из результата поиска без изменений.", InputSchema: summarizeSchema()}, func(_ context.Context, _ *mcp.CallToolRequest, in SummarizeInput) (*mcp.CallToolResult, IssueReport, error) {
+		out, err := summarizeIssues(in)
+		return nil, out, err
+	})
+	mcp.AddTool(server, &mcp.Tool{Annotations: &mcp.ToolAnnotations{ReadOnlyHint: false, DestructiveHint: boolPointer(false), IdempotentHint: true, OpenWorldHint: boolPointer(false)}, Name: "save_issue_report", Description: "Сохранить Markdown из summarize_issues в новый файл каталога reports. Разрешены только простые имена .md; существующий файл с другим содержимым не перезаписывается.", InputSchema: saveSchema()}, func(_ context.Context, _ *mcp.CallToolRequest, in SaveReportInput) (*mcp.CallToolResult, SavedReport, error) {
+		out, err := saveIssueReport(reportsDir, in)
 		return nil, out, err
 	})
 	return server
